@@ -215,7 +215,6 @@ protected TickRateModulation doBusWork() {
         final IMEMonitor<IAEItemStack> itemInventory = this.getProxy().getStorage().getItemInventory();
 
         if (destination != null) {
-            // Use the fluid filter to determine what fluid to export
         
             FluidType fluidTypeToExport = getFluidTypeFromFilterSlot();
 
@@ -225,7 +224,6 @@ protected TickRateModulation doBusWork() {
             ModLogger.logger.info(fluidTypeToExport.getName());
 
             if (fluidTypeToExport != Fluids.NONE) {
-                // Convert FluidType to FluidStack for HBM's system
 
                 DirPos[] positions = getAdjacentPositions();
 
@@ -254,8 +252,6 @@ protected TickRateModulation doBusWork() {
                     if (itemsToCreate > 0) {
                         ItemStack fluidItemStack = new ItemStack(ModItems.fluid_icon, itemsToCreate, fluidTypeToExport.getID());
                         ModLogger.logger.info("Creating " + itemsToCreate + " fluid items");
-
-                        // Try to insert the items into the AE2 network
                         IAEItemStack itemStackToInsert = AEItemStack.create(fluidItemStack);
                         IAEItemStack notInserted = itemInventory.injectItems(itemStackToInsert, Actionable.SIMULATE, mySrc);
 
