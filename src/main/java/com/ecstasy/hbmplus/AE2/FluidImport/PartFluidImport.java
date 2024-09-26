@@ -22,14 +22,12 @@ import appeng.api.config.SchedulingMode;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.MachineSource;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.parts.IPartCollisionHelper;
 import appeng.api.parts.IPartRenderHelper;
-import appeng.api.storage.IMEInventory;
 import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.client.texture.CableBusTextures;
@@ -52,7 +50,6 @@ import net.minecraft.world.World;
 
 public class PartFluidImport extends PartSharedItemBus implements IFluidStandardTransceiver {
     private final BaseActionSource mySrc;
-    private long itemToSend = 1;
     private boolean didSomething = false;
     private int nextSlot = 0;
 
@@ -208,7 +205,6 @@ protected TickRateModulation doBusWork() {
         return TickRateModulation.IDLE;
     }
 
-    this.itemToSend = this.calculateItemsToSend();
     this.didSomething = false;
     try {
         final InventoryAdaptor destination = this.getHandler();
@@ -403,34 +399,6 @@ protected TickRateModulation doBusWork() {
     @Override
     protected boolean isSleeping() {
         return this.getHandler() == null || super.isSleeping();
-    }
-
-    @SuppressWarnings("unused")
-    private void pushItemIntoTarget(final InventoryAdaptor d, final IEnergyGrid energy,
-            final IMEInventory<IAEItemStack> inv, IAEItemStack ais) {
-        final ItemStack is = ais.getItemStack();
-        is.stackSize = (int) this.itemToSend;
-
-        final ItemStack o = d.simulateAdd(is);
-        final long canFit = o == null ? this.itemToSend : this.itemToSend - o.stackSize;
-
-        if (canFit > 0) {
-            ais = ais.copy();
-            ais.setStackSize(canFit);
-            final IAEItemStack itemsToAdd = Platform.poweredExtraction(energy, inv, ais, this.mySrc);
-
-            if (itemsToAdd != null) {
-                this.itemToSend -= itemsToAdd.getStackSize();
-
-                final ItemStack failed = d.addItems(itemsToAdd.getItemStack());
-                if (failed != null) {
-                    ais.setStackSize(failed.stackSize);
-                    inv.injectItems(ais, Actionable.MODULATE, this.mySrc);
-                } else {
-                    this.didSomething = true;
-                }
-            }
-        }
     }
 
 
