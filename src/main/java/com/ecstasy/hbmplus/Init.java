@@ -1,5 +1,6 @@
 package com.ecstasy.hbmplus;
 
+import com.ecstasy.hbmplus.Recipes.ICFLaserMulti;
 import com.ecstasy.hbmplus.Recipes.InitRecipes;
 import com.hbm.main.ServerProxy;
 import com.ecstasy.hbmplus.AE2.InitAE2;
@@ -48,5 +49,6 @@ public class Init {
 
     @EventHandler public void postInit(FMLPostInitializationEvent event) throws IllegalArgumentException, IllegalAccessException {
         InitRecipes.Main();
+        ICFLaserMulti.patch();
     }
 }

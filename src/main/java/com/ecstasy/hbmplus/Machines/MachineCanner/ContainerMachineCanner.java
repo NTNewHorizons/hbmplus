@@ -6,12 +6,12 @@ import net.minecraft.inventory.Container;
 
 public class ContainerMachineCanner extends Container {
 
-   private TileEntityMachineCanner machine;
-   public ContainerMachineCanner(InventoryPlayer invPlayer, TileEntityMachineCanner tileEntityMachineShredderLarge) {
+    private TileEntityMachineCanner machine;
+    public ContainerMachineCanner(InventoryPlayer invPlayer, TileEntityMachineCanner tileEntityMachineShredderLarge) {
 
-   }
+    }
 
-   @Override public boolean canInteractWith(EntityPlayer player) {
+    @Override public boolean canInteractWith(EntityPlayer player) {
         return machine.isUseableByPlayer(player);
     }
 }
