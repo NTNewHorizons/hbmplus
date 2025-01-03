@@ -1,1 +1,0 @@
-INDEX VERSION 1.127+C:\Users\atheo\Desktop\modding\hbmplus\.metadata\.plugins\org.eclipse.jdt.core
