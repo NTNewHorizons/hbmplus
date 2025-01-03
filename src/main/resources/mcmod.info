@@ -2,7 +2,7 @@
     {
         "modid": "hbmplus",
         "name": "HBM Plus",
-        "version": "--stacktrace",
+        "version": "--refresh-dependencies",
         "mcversion": "1.7.10",
         "description": "changes stuff i dont like about hbm",
         "url": "",

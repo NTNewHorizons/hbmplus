@@ -1,5 +1,6 @@
 package com.ecstasy.hbmplus.Items;
 
+import com.ecstasy.hbmplus.Shared.ModLogger;
 import com.hbm.hazard.HazardSystem;
 import com.hbm.items.ModItems;
 import com.hbm.main.CraftingManager;
@@ -17,6 +18,8 @@ public class ItemCustomBreedingRod extends Item {
     public Item rod;
 
     public ItemCustomBreedingRod(String name, Item billet, float rad, int id) {
+        ModLogger.logger.info("Lmao");
+        
         this.rod = new CustomItem("rod_" + name).setContainerItem(ModItems.rod_empty);
         this.dualRod = new CustomItem("rod_dual_" + name).setContainerItem(ModItems.rod_dual_empty);
         this.quadRod = new CustomItem("rod_quad_" + name).setContainerItem(ModItems.rod_quad_empty);

@@ -87,7 +87,7 @@ dependencies {
 
     compile "codechicken:ForgeMultipart:1.7.10-1.2.0.345:dev"
 
-    implementation 'com.github.HbmMods:Hbm-s-Nuclear-Tech-GIT:1.0.27_X5061'
+    implementation 'com.github.HbmMods:Hbm-s-Nuclear-Tech-GIT:1.0.27_X5193'
     implementation files('libs/ccc.jar')
     implementation files('libs/nei.jar')
     implementation files('libs/ae2.jar')

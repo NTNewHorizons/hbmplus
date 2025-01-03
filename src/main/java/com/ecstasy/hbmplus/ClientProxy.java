@@ -4,7 +4,6 @@ import java.util.Iterator;
 
 import com.ecstasy.hbmplus.Machines.MachineShredderLarge.RenderMachineShredder;
 import com.ecstasy.hbmplus.Machines.MachineShredderLarge.TileEntityMachineShredderLarge;
-import com.hbm.main.ModEventHandlerClient;
 import com.hbm.main.ModEventHandlerRenderer;
 import com.hbm.main.ServerProxy;
 import com.hbm.render.loader.HmfModelLoader;
@@ -26,7 +25,7 @@ public class ClientProxy extends ServerProxy {
 	
 	@Override public void registerRenderInfo() {
 
-		registerClientEventHandler(new ModEventHandlerClient());
+//		registerClientEventHandler(new ModEventHandlerClient()); <-- causes double tooltips
 		registerClientEventHandler(new ModEventHandlerRenderer());
 		registerClientEventHandler(theInfoSystem);
 
