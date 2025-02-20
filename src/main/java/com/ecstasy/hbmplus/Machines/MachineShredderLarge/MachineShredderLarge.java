@@ -5,6 +5,8 @@ import com.hbm.handler.MultiblockHandlerXR;
 import com.hbm.main.MainRegistry;
 import com.hbm.tileentity.TileEntityProxyCombo;
 
+import com.ecstasy.hbmplus.Machines.MachineShredderLarge.TileEntityMachineShredderLarge;
+
 import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
@@ -100,7 +102,7 @@ public class MachineShredderLarge extends BlockDummyable {
 		if(meta >= 12)
 			return new TileEntityMachineShredderLarge();
 		if(meta >= 6)
-			return new TileEntityProxyCombo().power();
+			return new TileEntityProxyCombo(false, true, true);
 
 		return null;
 	}

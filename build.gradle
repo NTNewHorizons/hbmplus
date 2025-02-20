@@ -8,6 +8,7 @@ buildscript {
     repositories {
         maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://plugins.gradle.org/m2' }
+ //       maven { url = "https://jitpack.io" }
         mavenCentral()
     }
     dependencies {
@@ -86,8 +87,9 @@ dependencies {
 //	compileOnly 'codechicken:NotEnoughItems:1.7.10-1.0.3.74:src'
 
     compile "codechicken:ForgeMultipart:1.7.10-1.2.0.345:dev"
+    implementation 'com.github.HbmMods:Hbm-s-Nuclear-Tech-GIT:1.0.27_X5230'
+    
 
-    implementation 'com.github.HbmMods:Hbm-s-Nuclear-Tech-GIT:1.0.27_X5193'
     implementation files('libs/ccc.jar')
     implementation files('libs/nei.jar')
     implementation files('libs/ae2.jar')

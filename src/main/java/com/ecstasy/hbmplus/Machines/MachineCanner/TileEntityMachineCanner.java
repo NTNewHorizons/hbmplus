@@ -11,13 +11,14 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import java.util.HashMap;
 import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
 
 import com.hbm.blocks.BlockDummyable;
 import com.hbm.blocks.ModBlocks;
-import com.hbm.inventory.UpgradeManager;
+import com.hbm.inventory.UpgradeManagerNT;
 import com.hbm.inventory.fluid.tank.FluidTank;
 import com.hbm.inventory.recipes.ShredderRecipes;
 import com.hbm.items.machine.ItemMachineUpgrade;
@@ -57,6 +58,8 @@ public class TileEntityMachineCanner extends TileEntityMachineBase implements IE
 	public static int processingSpeed = 200;
 	public static int baseConsumption = 200;
 
+	public UpgradeManagerNT upgradeManager = new UpgradeManagerNT();
+
 	private static final int[] slot_io = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
 	public TileEntityMachineCanner() {
@@ -73,7 +76,7 @@ public class TileEntityMachineCanner extends TileEntityMachineBase implements IE
 
 		if (i > 28 && stack.getItem() instanceof ItemMachineUpgrade) {
 			ItemMachineUpgrade item = (ItemMachineUpgrade) stack.getItem();
-			return canProvideInfo(item.type, item.tier, false) && item.tier <= getMaxLevel(item.type);
+			return canProvideInfo(item.type, item.tier, false);
 		}
 
 		return false;
@@ -192,14 +195,14 @@ public class TileEntityMachineCanner extends TileEntityMachineBase implements IE
 			int consumption = baseConsumption;
 			int speed = 1;
 			
-			UpgradeManager.eval(slots, 29, 31);
-			speed += Math.min(UpgradeManager.getLevel(UpgradeType.SPEED), 3);
-			consumption += Math.min(UpgradeManager.getLevel(UpgradeType.SPEED), 3) * baseConsumption;
+			upgradeManager.checkSlots(this, slots, 29, 31);
+			speed += Math.min(upgradeManager.getLevel(UpgradeType.SPEED), 3);
+			consumption += Math.min(upgradeManager.getLevel(UpgradeType.SPEED), 3) * baseConsumption;
 			
-			speed *= (1 + Math.min(UpgradeManager.getLevel(UpgradeType.OVERDRIVE), 3) * 5);
-			consumption += Math.min(UpgradeManager.getLevel(UpgradeType.OVERDRIVE), 3) * baseConsumption * 50;
+			speed *= (1 + Math.min(upgradeManager.getLevel(UpgradeType.OVERDRIVE), 3) * 5);
+			consumption += Math.min(upgradeManager.getLevel(UpgradeType.OVERDRIVE), 3) * baseConsumption * 50;
 			
-			consumption /= (1 + Math.min(UpgradeManager.getLevel(UpgradeType.POWER), 3));
+			consumption /= (1 + Math.min(upgradeManager.getLevel(UpgradeType.POWER), 3));
 
 			unloadItems();
 
@@ -357,18 +360,11 @@ public class TileEntityMachineCanner extends TileEntityMachineBase implements IE
 	}
 
 	@Override public void setInventorySlotContents(int i, ItemStack stack) {
-		super.setInventorySlotContents(i, stack);
+		slots[i] = stack;
 		
 		if(stack != null && stack.getItem() instanceof ItemMachineUpgrade && i >= 28) {
 			worldObj.playSoundEffect(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5, "hbm:item.upgradePlug", 1.0F, 1.0F);
 		}
-	}
-
-	@Override public int getMaxLevel(UpgradeType type) {
-		if(type == UpgradeType.SPEED) return 3;
-		if(type == UpgradeType.POWER) return 3;
-		if(type == UpgradeType.OVERDRIVE) return 3;
-		return 0;
 	}
 
 	@Override public ItemStack decrStackSize(int i, int j) {
@@ -413,5 +409,14 @@ public class TileEntityMachineCanner extends TileEntityMachineBase implements IE
 		
 		
 		
+	}
+
+	@Override
+	public HashMap<UpgradeType, Integer> getValidUpgrades() {
+		HashMap<UpgradeType, Integer> upgrades = new HashMap<>();
+		upgrades.put(UpgradeType.SPEED, 3);
+		upgrades.put(UpgradeType.POWER, 3);
+		upgrades.put(UpgradeType.OVERDRIVE, 3);
+		return upgrades;
 	}
 }
