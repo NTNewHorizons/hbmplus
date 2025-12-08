@@ -8,11 +8,13 @@ buildscript {
     repositories {
         maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://plugins.gradle.org/m2' }
- //       maven { url = "https://jitpack.io" }
+
+        maven { url = "https://jitpack.io" }
         mavenCentral()
     }
     dependencies {
         classpath ('com.anatawa12.forge:ForgeGradle:1.2-1.0.+') { changing = true }
+
     }
 }
 
@@ -70,10 +72,25 @@ repositories {
         name = 'ModMaven'
         url = 'https://modmaven.dev'
     }
+
     maven {
         name = "JitPack"
         url = "https://jitpack.io"
     }
+    maven {
+        url = "https://cursemaven.com"
+    }
+    maven {
+        name = 'MM repo'
+        url = 'https://maven.k-4u.nl/'
+    }
+
+    maven {
+        name = 'OpenComputers Repo'
+        url = 'https://maven.cil.li/'
+
+    }
+
 }
 
 dependencies {
@@ -86,14 +103,18 @@ dependencies {
 //    implementation 'codechicken:NotEnoughItems:1.7.10-1.0.3.74:dev'
 //	compileOnly 'codechicken:NotEnoughItems:1.7.10-1.0.3.74:src'
 
-    compile "codechicken:ForgeMultipart:1.7.10-1.2.0.345:dev"
-    implementation 'com.github.HbmMods:Hbm-s-Nuclear-Tech-GIT:1.0.27_X5230'
-    
+    //compile "codechicken:ForgeMultipart:1.7.10-1.2.0.345:dev"
+    implementation 'com.github.HbmMods:Hbm-s-Nuclear-Tech-GIT:1.0.27_X5526'
+    //compile files('libs/hbm.jar')
 
     implementation files('libs/ccc.jar')
     implementation files('libs/nei.jar')
-    implementation files('libs/ae2.jar')
-
+    implementation files('libs/nei.jar')
+    implementation files('libs/appliedenergistics2-rv3-beta-407-GTNH-pre.jar')
+    //runtimeOnly files('libs/gtnhmixins-2.1.13-dev.jar')
+   // runtime "com.github.GTNewHorizons:GTNHLib:0.8.21:dev"
+    //implementation 'org.spongepowered:mixin:0.8.5'
+    //runtime "com.github.GTNewHorizons:GTNHMixins:2.3.4:dev"
 }
 
 processResources {
@@ -135,7 +156,8 @@ tasks.withType(JavaExec) {
     if (name == 'runClient') {
         jvmArgs = [
             '-Xmx8G', // Allocate 8 GB of RAM for the client
-            '-Xms4G'  // Set the initial heap size to 4 GB
+            '-Xms4G',  // Set the initial heap size to 4 GB
+            //'--tweakClass', 'org.spongepowered.asm.launch.MixinTweaker'
         ]
     }
 }
