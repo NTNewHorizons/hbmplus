@@ -1,49 +1,31 @@
 package com.ecstasy.hbmplus.Recipes;
 
-import com.hbm.inventory.recipes.ChemplantRecipes;
-import com.hbm.inventory.recipes.ChemplantRecipes.ChemRecipe;
+import com.hbm.inventory.recipes.ChemicalPlantRecipes;
+
+import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.items.ModItems;
 
 import net.minecraft.item.ItemStack;
 
 import com.hbm.inventory.FluidStack;
-import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.RecipesCommon.ComparableStack;
 import com.hbm.inventory.fluid.Fluids;
 
 public class ChemPlant {
 
     public static void Init () {
-        final int BaseLevel = 1500; // ok
+        final int powerConsumption = 1_000;
+        final GenericRecipe ENCHANTMENT = new GenericRecipe("chem.enchantment").setup(5 * 20, powerConsumption);
+        final GenericRecipe EXPERIENCE = new GenericRecipe("chem.experience").setup(3 * 20, powerConsumption);
 
-        final ChemRecipe ENCHANTMENT = new ChemRecipe(BaseLevel + 1, "ENCHANTMENT", 5 * 20);
-        ChemplantRecipes.recipes.add(ENCHANTMENT);
+        ENCHANTMENT.inputItems(new ComparableStack(ModItems.powder_quartz, 4));
+        ENCHANTMENT.inputFluids(new FluidStack(Fluids.XENON, 1000));
+        ENCHANTMENT.outputItems(new ItemStack(ModItems.powder_magic, 1));
 
-        final ChemRecipe EXPERIENCE = new ChemRecipe(BaseLevel + 2, "EXPERIENCE", 3 * 20);
-        ChemplantRecipes.recipes.add(EXPERIENCE);
+        EXPERIENCE.inputItems(new ComparableStack(ModItems.powder_magic), new ComparableStack(ModItems.powder_lapis, 4));
+        EXPERIENCE.outputFluids(new FluidStack(Fluids.XPJUICE, 1000));
 
-        ENCHANTMENT.inputItems(new AStack[] {
-            new ComparableStack(ModItems.powder_quartz, 4)
-        });
-
-        ENCHANTMENT.inputFluids(new FluidStack(
-            Fluids.XENON, 1000
-        ));
-
-        ENCHANTMENT.outputItems(new ItemStack[] {
-            new ItemStack(ModItems.powder_magic, 1)
-        });
-
-
-        EXPERIENCE.inputItems(new AStack[] {
-           new ComparableStack(ModItems.powder_magic),
-           new ComparableStack(ModItems.powder_lapis, 4) 
-        });
-
-        EXPERIENCE.outputFluids(
-            new FluidStack(Fluids.XPJUICE, 1000)
-        );
-
-        
+        ChemicalPlantRecipes.INSTANCE.register(ENCHANTMENT);
+        ChemicalPlantRecipes.INSTANCE.register(EXPERIENCE);
     }
 }

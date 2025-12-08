@@ -22,7 +22,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
 @Mod(modid = Init.MODID, version = Init.VERSION, name = Init.NAME)
 
 public class Init {
-    public static final String MODID = "hmbplus";
+    public static final String MODID = "hmbplus";//bro fml i did a typo im not reverting it because then everything breaks
     public static final String NAME = "HBM Plus";
     public static final String VERSION = "1.1";
 
