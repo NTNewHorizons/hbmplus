@@ -42,7 +42,6 @@ import com.hbm.tileentity.IUpgradeInfoProvider;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.util.BobMathUtil;
 import com.hbm.util.CompatEnergyControl;
-import com.hbm.util.I18nUtil;
 import com.hbm.util.InventoryUtil;
 
 import api.hbm.tile.IInfoProviderEC;
@@ -107,7 +106,7 @@ public class TileEntityMachineShredderLarge extends TileEntityMachineBase implem
 
 	@Override public boolean isItemValidForSlot(int i, ItemStack stack) {
 		if(i == 28) return stack.getItem() instanceof IBatteryItem;
-		if(i < 14) return ShredderRecipes.getShredderResult(stack) != null;
+		if(i < 14) return true;// ShredderRecipes.getShredderResult(stack) != null;
 
 		if (i > 28 && stack.getItem() instanceof ItemMachineUpgrade) {
 			ItemMachineUpgrade item = (ItemMachineUpgrade) stack.getItem();
@@ -243,6 +242,22 @@ public class TileEntityMachineShredderLarge extends TileEntityMachineBase implem
 		return false;
 	}
 
+	public boolean hasSpaceForInput(ItemStack stack) {
+		
+		for (int i = 0; i < 14; i++) {
+			if (slots[i] == null) return true;
+		}
+
+		for (int i = 0; i < 14; i++) {
+			ItemStack s = slots[i];
+			if (s != null && s.isItemEqual(stack) && s.stackSize < s.getMaxStackSize()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public boolean hasPower() {
 		return power > 0;
 	}
@@ -317,8 +332,10 @@ public class TileEntityMachineShredderLarge extends TileEntityMachineBase implem
 					EntityItem item = (EntityItem) obj;
 					ItemStack itemStack = item.getEntityItem();
 
-					if (insertItem(itemStack)) {
-						item.setDead();
+					if (hasSpaceForInput(itemStack)) {
+						if (insertItem(itemStack)) {
+							item.setDead();
+						}
 					}
 
 				} else if (obj instanceof EntityLivingBase && power > 0) {
@@ -504,16 +521,16 @@ public class TileEntityMachineShredderLarge extends TileEntityMachineBase implem
 	@SuppressWarnings("static-access")
 	@Override public void provideInfo(UpgradeType type, int level, List<String> info, boolean extendedInfo) {
 		info.add("Large Shredder");
-		if(type == UpgradeType.SPEED) {
-			info.add(EnumChatFormatting.GREEN + I18nUtil.resolveKey(this.KEY_DELAY, "-" + (100 - 100 / (level + 1)) + "%"));
-			info.add(EnumChatFormatting.RED + I18nUtil.resolveKey(this.KEY_CONSUMPTION, "+" + (level * 100) + "%"));
-		}
-		if(type == UpgradeType.POWER) {
-			info.add(EnumChatFormatting.GREEN + I18nUtil.resolveKey(this.KEY_CONSUMPTION, "-" + (100 - 100 / (level + 1)) + "%"));
-		}
-		if(type == UpgradeType.OVERDRIVE) {
-			info.add((BobMathUtil.getBlink() ? EnumChatFormatting.RED : EnumChatFormatting.DARK_GRAY) + "YES");
-		}
+		// if(type == UpgradeType.SPEED) {
+		// 	info.add(EnumChatFormatting.GREEN + I18nUtil.resolveKey(this.KEY_DELAY, "-" + (100 - 100 / (level + 1)) + "%"));
+		// 	info.add(EnumChatFormatting.RED + I18nUtil.resolveKey(this.KEY_CONSUMPTION, "+" + (level * 100) + "%"));
+		// }
+		// if(type == UpgradeType.POWER) {
+		// 	info.add(EnumChatFormatting.GREEN + I18nUtil.resolveKey(this.KEY_CONSUMPTION, "-" + (100 - 100 / (level + 1)) + "%"));
+		// }
+		// if(type == UpgradeType.OVERDRIVE) {
+		// 	info.add((BobMathUtil.getBlink() ? EnumChatFormatting.RED : EnumChatFormatting.DARK_GRAY) + "YES");
+		// }
 	}
 
 	@Override public void setInventorySlotContents(int i, ItemStack stack) {
