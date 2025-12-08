@@ -29,3 +29,6 @@
 
 # Changelog backup
 /changelog.bak
+/sync.bat
+/launch.json
+/libs
