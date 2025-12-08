@@ -1,28 +1,11 @@
 package com.ecstasy.hbmplus.AE2.FluidImport;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import com.ecstasy.hbmplus.Shared.ModLogger;
-import com.hbm.inventory.fluid.FluidType;
-import com.hbm.inventory.fluid.Fluids;
-import com.hbm.inventory.fluid.tank.FluidTank;
-import com.hbm.items.ModItems;
-import com.hbm.items.machine.ItemFluidIdentifier;
-import com.hbm.util.fauxpointtwelve.DirPos;
-
-import api.hbm.fluid.IFluidConductor;
-import api.hbm.fluid.IFluidConnector;
-import api.hbm.fluid.IFluidStandardTransceiver;
-import api.hbm.fluid.IPipeNet;
-import appeng.api.config.Actionable;
+import api.hbm.fluidmk2.IFluidReceiverMK2;
 import appeng.api.config.FuzzyMode;
 import appeng.api.config.RedstoneMode;
-import appeng.api.config.SchedulingMode;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.MachineSource;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
@@ -32,185 +15,109 @@ import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.client.texture.CableBusTextures;
 import appeng.core.settings.TickRates;
-import appeng.core.sync.GuiBridge;
 import appeng.helpers.Reflected;
 import appeng.parts.automation.PartSharedItemBus;
-import appeng.util.InventoryAdaptor;
-import appeng.util.Platform;
-import appeng.util.item.AEItemStack;
+
+import com.ecstasy.hbmplus.Integration.HBMFluidBridge;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.fluid.tank.FluidTank;
+import com.hbm.items.machine.IItemFluidIdentifier;
+
+import api.hbm.fluidmk2.IFluidUserMK2;
+import api.hbm.fluidmk2.IFluidProviderMK2;
+
+import com.hbm.lib.Library;
+import com.hbm.util.fauxpointtwelve.BlockPos;
+import com.hbm.util.fauxpointtwelve.DirPos;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.renderer.RenderBlocks;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import appeng.util.Platform;
+import appeng.core.sync.GuiBridge;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Vec3;
+import net.minecraft.entity.player.EntityPlayer;
+import appeng.api.config.Actionable;
+import appeng.util.item.AEItemStack;
+import com.hbm.items.ModItems;
+import api.hbm.fluidmk2.FluidNode;
+import com.hbm.uninos.UniNodespace;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class PartFluidImport extends PartSharedItemBus implements IFluidStandardTransceiver {
-    private final BaseActionSource mySrc;
-    private boolean didSomething = false;
-    private int nextSlot = 0;
+import java.util.HashSet;
+//IFluidUserMK2, IFluidProviderMK2 export
+//IFluidUserMK2, IFluidReceiverMK2 import
+public class PartFluidImport extends PartSharedItemBus implements IFluidUserMK2, IFluidReceiverMK2 {
 
-    private FluidTank tank;
-    public boolean isLoaded = true;
+    private final MachineSource mySrc;
+    private final FluidTank tank;
     private static final int FLUID_FILTER_SLOT = 0;
+    private boolean didSomething = false;
+    protected FluidNode node;
+    protected FluidType lastType;
 
-    // Proxy TileEntity to handle fluid logic
-    private TileEntity proxyTileEntity;
+    private static final int fluidRate = 1;
 
-    @Override
-    public boolean isLoaded() {
-        return isLoaded;
-    }
-
-    @Override 
-    public FluidTank[] getSendingTanks() {
-        return new FluidTank[0];
-    }
-
-    @Override 
-    public FluidTank[] getAllTanks() {
-        return new FluidTank[] { tank };
-    }
-
-    @Override 
-    public FluidTank[] getReceivingTanks() {
-        return new FluidTank[] { tank };
-    }
-
-    @Override
-    public long transferFluid(FluidType type, int pressure, long fluid) {
-        long toTransfer = Math.min(getDemand(type, pressure), fluid);
-        tank.setFill(tank.getFill() + (int) toTransfer);
-        return fluid - toTransfer;
-    }
-
-    // Constructor
     @Reflected
-    public PartFluidImport(final ItemStack is) {
+    public PartFluidImport(ItemStack is) {
         super(is);
-
-        this.getConfigManager().registerSetting(Settings.REDSTONE_CONTROLLED, RedstoneMode.IGNORE);
-        this.getConfigManager().registerSetting(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
-        this.getConfigManager().registerSetting(Settings.CRAFT_ONLY, YesNo.NO);
-        this.getConfigManager().registerSetting(Settings.SCHEDULING_MODE, SchedulingMode.DEFAULT);
-        this.mySrc = new MachineSource(this);
-        this.tank = new FluidTank(Fluids.NONE, 24000);
-        
+        getConfigManager().registerSetting(Settings.REDSTONE_CONTROLLED, RedstoneMode.IGNORE);
+        getConfigManager().registerSetting(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
+        getConfigManager().registerSetting(Settings.CRAFT_ONLY, YesNo.NO);
+        mySrc = new MachineSource(this);
+        tank = new FluidTank(Fluids.NONE, 128000);
     }
 
-    // Dummy TileEntity to handle fluid logic
-    private class DummyTileEntity extends TileEntity implements IFluidStandardTransceiver {
-        @Override
-        public long transferFluid(FluidType type, int pressure, long fluid) {
-            return PartFluidImport.this.transferFluid(type, pressure, fluid);
-        }
-
-        @Override
-        public FluidTank[] getSendingTanks() {
-            return PartFluidImport.this.getSendingTanks();
-        }
-
-        @Override
-        public FluidTank[] getAllTanks() {
-            return PartFluidImport.this.getAllTanks();
-        }
-
-        @Override
-        public FluidTank[] getReceivingTanks() {
-            return PartFluidImport.this.getReceivingTanks();
-        }
-
-        @Override public boolean isLoaded() {
-            return true;
-        }
-    }
 
     @Override
-    public void readFromNBT(final NBTTagCompound extra) {
+    public boolean isLoaded() { return getHost() != null && getHost().getTile() != null; }
+
+    @Override
+    public void readFromNBT(NBTTagCompound extra) {
         super.readFromNBT(extra);
-        this.nextSlot = extra.getInteger("nextSlot");
+        tank.readFromNBT(extra, "tank");
     }
 
     @Override
-    public void writeToNBT(final NBTTagCompound extra) {
+    public void writeToNBT(NBTTagCompound extra) {
         super.writeToNBT(extra);
-        extra.setInteger("nextSlot", this.nextSlot);
+        tank.writeToNBT(extra, "tank");
     }
 
     private FluidType getFluidTypeFromFilterSlot() {
         ItemStack filterStack = this.getInventoryByName("config").getStackInSlot(FLUID_FILTER_SLOT);
-        if (filterStack != null && filterStack.getItem() instanceof ItemFluidIdentifier) {
-            ItemFluidIdentifier id = (ItemFluidIdentifier) filterStack.getItem();
+        if (filterStack != null && filterStack.getItem() instanceof IItemFluidIdentifier) {
+            IItemFluidIdentifier id = (IItemFluidIdentifier) filterStack.getItem();
             return id.getType(null, 0, 0, 0, filterStack);
         }
         return Fluids.NONE;
     }
 
-    private DirPos[] getAdjacentPositions() {
-        int x = this.getHost().getTile().xCoord + this.getSide().offsetX;
-        int y = this.getHost().getTile().yCoord + this.getSide().offsetY;
-        int z = this.getHost().getTile().zCoord + this.getSide().offsetZ;
-        return new DirPos[] { new DirPos(x, y, z, this.getSide()) };
+    protected DirPos[] getConPos() {
+        ForgeDirection side = this.getSide();
+        int nx = this.getHost().getTile().xCoord + side.offsetX;
+        int ny = this.getHost().getTile().yCoord + side.offsetY;
+        int nz = this.getHost().getTile().zCoord + side.offsetZ;
+        return new DirPos[] {
+                new DirPos(nx, ny, nz, side)
+        };
     }
 
-    private int transmitFluid() {
-        World world = this.getHost().getTile().getWorldObj();
-        DirPos[] positions = getAdjacentPositions();
-        int fill = tank.getFill();
-        fill = transmitFluidFairly(world, tank, this, fill, true, false, positions);
-        return fill;
-    }
+    protected FluidNode createNode(FluidType type) {
+        DirPos[] conPos = getConPos();
 
-    private static int transmitFluidFairly(World world, FluidTank tank, IFluidConnector that, int fill, boolean connect, boolean send, DirPos[] connections) {
-        Set<IPipeNet> nets = new HashSet<>();
-        Set<IFluidConnector> consumers = new HashSet<>();
-        FluidType type = tank.getTankType();
-        int pressure = tank.getPressure();
-
-        for (DirPos pos : connections) {
-            TileEntity te = world.getTileEntity(pos.getX(), pos.getY(), pos.getZ());
-
-            if (te instanceof IFluidConductor) {
-                IFluidConductor con = (IFluidConductor) te;
-                if (con.getPipeNet(type) != null) {
-                    nets.add(con.getPipeNet(type));
-                    con.getPipeNet(type).unsubscribe(that);
-                    consumers.addAll(con.getPipeNet(type).getSubscribers());
-                }
-            } else if (te instanceof IFluidConnector) {
-                consumers.add((IFluidConnector) te);
-            }
+        HashSet<BlockPos> posSet = new HashSet<>();
+        posSet.add(new BlockPos(this.getTile()));
+        for(DirPos pos : conPos) {
+            ForgeDirection dir = pos.getDir();
+            posSet.add(new BlockPos(pos.getX() - dir.offsetX, pos.getY() - dir.offsetY, pos.getZ() - dir.offsetZ));
         }
 
-        consumers.remove(that);
-
-        if (fill > 0 && send) {
-            for (IFluidConnector consumer : consumers) {
-                if (consumer != null && consumer != that) {
-                    long demand = consumer.getDemand(type, pressure);
-                    if (demand > 0) {
-                        long toSend = Math.min(fill, demand);
-                        long remaining = consumer.transferFluid(type, pressure, toSend);
-                        long sent = toSend - remaining;
-                        fill -= sent;
-                        if (fill <= 0) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (connect) {
-            for (IPipeNet net : nets) {
-                net.subscribe(that);
-            }
-        }
-
-        return fill;
+        return new FluidNode(type.getNetworkProvider(), posSet.toArray(new BlockPos[posSet.size()])).setConnections(conPos);
     }
 
     @Override
@@ -220,81 +127,87 @@ public class PartFluidImport extends PartSharedItemBus implements IFluidStandard
         }
 
         this.didSomething = false;
+
         try {
-            final IMEMonitor<IAEItemStack> itemInventory = this.getProxy().getStorage().getItemInventory();
+            final IMEMonitor<IAEItemStack> inv = this.getProxy().getStorage().getItemInventory();
 
-            FluidType fluidTypeToExport = getFluidTypeFromFilterSlot();
-            tank.setTankType(fluidTypeToExport);
+            if (inv != null) {
+                FluidType type = getFluidTypeFromFilterSlot();
+                //ItemStack fluidIconStack = new ItemStack(ModItems.fluid_icon, 64, type.getID());
 
-            if (fluidTypeToExport != Fluids.NONE) {
-                DirPos[] positions = getAdjacentPositions();
 
-                for (DirPos pos : positions) {
-                    this.trySubscribe(fluidTypeToExport, this.getTile().getWorldObj(), pos.getX(), pos.getY(), pos.getZ(), pos.getDir());
-                }
 
-                this.subscribeToAllAround(fluidTypeToExport, this.proxyTileEntity);  // Correctly using proxy TileEntity here
+                System.out.println("[export] inv exists" + type.getName());
+                System.out.println("[export] fill: " + this.tank.getFill());
 
-                long fluidAmountToExport = getDemand(fluidTypeToExport, tank.getPressure());
+                this.tank.setTankType(type);
 
-                if (fluidAmountToExport > 0) {
-                    int remainingFluid = transmitFluidFairly(this.getHost().getTile().getWorldObj(), tank, (IFluidConnector) this.proxyTileEntity, tank.getFill(), true, false, positions); // Use proxyTileEntity
-                    tank.setFill(remainingFluid);
-
-                    if (remainingFluid < fluidAmountToExport) {
-                        this.didSomething = true;
-                        int fluidAmount = tank.getFill();
-                        int itemsToCreate = fluidAmount / 1000;
-                        int remainingFluidd = fluidAmount % 1000;
-
-                        if (itemsToCreate > 0) {
-                            ItemStack fluidItemStack = new ItemStack(ModItems.fluid_icon, itemsToCreate, fluidTypeToExport.getID());
-                            IAEItemStack itemStackToInsert = AEItemStack.create(fluidItemStack);
-                            IAEItemStack notInserted = itemInventory.injectItems(itemStackToInsert, Actionable.SIMULATE, mySrc);
-
-                            if (notInserted == null || notInserted.getStackSize() == 0) {
-                                itemInventory.injectItems(itemStackToInsert, Actionable.MODULATE, mySrc);
+                if (tank.getFill() >= fluidRate) {
+                    int fluidAmount = tank.getFill();
+                    int itemsToCreate = fluidAmount / fluidRate;
+                    int remainingFluidd = fluidAmount % fluidRate;
+                    if (itemsToCreate > 0) {
+                        ItemStack fluidItemStack = new ItemStack(ModItems.fluid_icon, itemsToCreate, type.getID());
+                        IAEItemStack itemStackToInsert = AEItemStack.create(fluidItemStack);
+                        IAEItemStack notInserted = inv.injectItems(itemStackToInsert, Actionable.SIMULATE, mySrc);
+                        if (notInserted == null || notInserted.getStackSize() == 0) {
+                            inv.injectItems(itemStackToInsert, Actionable.MODULATE, mySrc);
+                            this.tank.setFill(remainingFluidd);
+                            this.didSomething = true;
+                        } else {
+                            int itemsInserted = (int) (itemsToCreate - notInserted.getStackSize());
+                            if (itemsInserted > 0) {
+                                ItemStack insertedStack = new ItemStack(ModItems.fluid_icon, itemsInserted, type.getID());
+                                IAEItemStack insertedAEStack = AEItemStack.create(insertedStack);
+                                inv.injectItems(insertedAEStack, Actionable.MODULATE, mySrc);
                                 tank.setFill(remainingFluidd);
                                 this.didSomething = true;
-                            } else {
-                                int itemsInserted = (int) (itemsToCreate - notInserted.getStackSize());
-                                if (itemsInserted > 0) {
-                                    ItemStack insertedStack = new ItemStack(ModItems.fluid_icon, itemsInserted, fluidTypeToExport.getID());
-                                    IAEItemStack insertedAEStack = AEItemStack.create(insertedStack);
-                                    itemInventory.injectItems(insertedAEStack, Actionable.MODULATE, mySrc);
-                                    tank.setFill(remainingFluidd);
-                                    this.didSomething = true;
-                                }
                             }
                         }
                     }
                 }
+
+                World worldObj = this.getTile().getWorldObj();
+                int xCoord = this.getTile().xCoord;
+                int yCoord = this.getTile().yCoord;
+                int zCoord = this.getTile().zCoord;
+
+                if (this.node == null || this.node.expired || this.tank.getTankType() != lastType) {
+                    this.node = (FluidNode) UniNodespace.getNode(worldObj, xCoord, yCoord, zCoord, tank.getTankType().getNetworkProvider());
+
+                    if(this.node == null || this.node.expired || tank.getTankType() != lastType) {
+                        this.node = this.createNode(tank.getTankType());
+                        UniNodespace.createNode(worldObj, this.node);
+                        lastType = tank.getTankType();
+                    }
+                }
+
+                if (node != null && node.hasValidNet()) {
+                    node.net.addReceiver(this);
+                }
+
+                // HBMFluidBridge.pushFromHBMToAE2(inv, this.mySrc, this.tank, fluidIconStack);
+
+
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception ignored) { ignored.printStackTrace(); }
 
         return this.didSomething ? TickRateModulation.FASTER : TickRateModulation.SLOWER;
     }
 
-    // Restored getTickingRequest method
-    @Override
-    public TickingRequest getTickingRequest(final IGridNode node) {
-        return new TickingRequest(TickRates.ExportBus.getMin(), TickRates.ExportBus.getMax(), this.isSleeping(), false);
-    }
 
-    // Restored tickingRequest method
+
     @Override
-    public TickRateModulation tickingRequest(final IGridNode node, final int ticksSinceLastCall) {
-        return this.doBusWork();
+    public TickingRequest getTickingRequest(IGridNode node) {
+        return new TickingRequest(TickRates.ExportBus.getMin(), TickRates.ExportBus.getMax(), false, false);
     }
 
     @Override
-    protected boolean isSleeping() {
-        return this.getHandler() == null || super.isSleeping();
+    public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        return doBusWork();
     }
 
-    // Restored Rendering Methods
+    // ---------- Rendering ----------
     @Override
     public void getBoxes(final IPartCollisionHelper bch) {
         bch.addBox(4, 4, 12, 12, 12, 14);
@@ -312,7 +225,8 @@ public class PartFluidImport extends PartSharedItemBus implements IFluidStandard
                 CableBusTextures.PartMonitorBack.getIcon(),
                 this.getItemStack().getIconIndex(),
                 CableBusTextures.PartExportSides.getIcon(),
-                CableBusTextures.PartExportSides.getIcon());
+                CableBusTextures.PartExportSides.getIcon()
+        );
 
         rh.setBounds(4, 4, 12, 12, 12, 14);
         rh.renderInventoryBox(renderer);
@@ -326,16 +240,17 @@ public class PartFluidImport extends PartSharedItemBus implements IFluidStandard
 
     @Override
     @SideOnly(Side.CLIENT)
-    public void renderStatic(final int x, final int y, final int z, final IPartRenderHelper rh,
-            final RenderBlocks renderer) {
+    public void renderStatic(final int x, final int y, final int z, final IPartRenderHelper rh, final RenderBlocks renderer) {
         this.setRenderCache(rh.useSimplifiedRendering(x, y, z, this, this.getRenderCache()));
+
         rh.setTexture(
                 CableBusTextures.PartExportSides.getIcon(),
                 CableBusTextures.PartExportSides.getIcon(),
                 CableBusTextures.PartMonitorBack.getIcon(),
                 this.getItemStack().getIconIndex(),
                 CableBusTextures.PartExportSides.getIcon(),
-                CableBusTextures.PartExportSides.getIcon());
+                CableBusTextures.PartExportSides.getIcon()
+        );
 
         rh.setBounds(4, 4, 12, 12, 12, 14);
         rh.renderBlock(x, y, z, renderer);
@@ -352,11 +267,45 @@ public class PartFluidImport extends PartSharedItemBus implements IFluidStandard
                 CableBusTextures.PartMonitorBack.getIcon(),
                 this.getItemStack().getIconIndex(),
                 CableBusTextures.PartMonitorSidesStatus.getIcon(),
-                CableBusTextures.PartMonitorSidesStatus.getIcon());
+                CableBusTextures.PartMonitorSidesStatus.getIcon()
+        );
 
         rh.setBounds(6, 6, 11, 10, 10, 12);
         rh.renderBlock(x, y, z, renderer);
 
         this.renderLights(x, y, z, rh, renderer);
     }
+
+    @Override
+    public int cableConnectionRenderTo() {
+        return 5;
+    }
+
+    @Override
+    public boolean onPartActivate(final EntityPlayer player, final Vec3 pos) {
+        if (!player.isSneaking()) {
+            if (Platform.isClient()) {
+                return true;
+            }
+
+            Platform.openGUI(player, this.getHost().getTile(), this.getSide(), GuiBridge.GUI_BUS);
+            return true;
+        }
+
+        return false;
+    }
+
+
+
+    // ---------- HBM Fluid Interface ----------
+    @Override public FluidTank[] getAllTanks() { return new FluidTank[]{tank}; }
+    @Override public long transferFluid(FluidType type, int pressure, long fluid) {
+
+        int toAdd = (int) Math.min(fluid, tank.getMaxFill() - tank.getFill());
+        tank.setFill((int)(tank.getFill() + toAdd));
+
+
+        return fluid - toAdd;
+    }
+    @Override public long getDemand(FluidType type, int pressure) { return tank.getMaxFill() - tank.getFill(); }
 }
