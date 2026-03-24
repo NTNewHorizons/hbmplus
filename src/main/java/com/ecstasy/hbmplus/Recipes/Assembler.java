@@ -120,7 +120,7 @@ public class Assembler {
                 new OreDictStack(OreDictManager.STEEL.plate(), 32),
                 new OreDictStack(OreDictManager.ANY_RESISTANTALLOY.ingot(), 24),
                 new ComparableStack(ModItems.motor_desh, 12),
-                new ComparableStack(ModItems.circuit, 6, EnumCircuitType.ADVANCED.ordinal()),
+                new ComparableStack(ModItems.circuit, 6, EnumCircuitType.ADVANCED.ordinal())
         );
 
 
